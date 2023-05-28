@@ -1,5 +1,5 @@
 {
-  "name": "smart-contract-example",
+  "name": "instagram-draws",
   "version": "0.0.0",
   "scripts": {
     "dev": "vite",
@@ -16,6 +16,7 @@
   "license": "MIT",
   "dependencies": {
     "@meforma/vue-toaster": "^1.3.0",
+    "csvtojson": "^2.0.10",
     "ethers": "^5.7.2",
     "vue": "^3.2.41",
     "vue-router": "^4.1.5"

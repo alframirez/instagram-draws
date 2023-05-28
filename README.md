@@ -1,7 +1,6 @@
-# smart-contract-example
+# instagram-draws
 
-https://alframirez.github.io/smart-contract-example/
-
+https://alframirez.github.io/instagram-draws/
 
 ## Project Setup
 

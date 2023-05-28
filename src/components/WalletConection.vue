@@ -1,7 +1,8 @@
 <template>
   <div class="conections-container">
     <!-- Init amount section -->
-    <div class="amount-container">
+    <h1>Sorteo de instagram</h1>
+    <!-- <div class="amount-container">
       <label>Extra Bonus *:</label>
       <input
         type="number"
@@ -11,13 +12,13 @@
         autofocus
         autocomplete="off"
       />
-    </div>
+    </div> -->
     <!-- End amount section -->
 
     <!-- Init Wallet cards -->
     <div class="card-container">
       <!-- Init Bsc options -->
-      <div class="card">
+      <div class="card" style="display: none">
         <img
           class="image"
           src="https://cryptologos.cc/logos/bnb-bnb-logo.png?v=023"
@@ -83,20 +84,21 @@
         </button>
 
         <!-- Process payment button -->
-        <button
+        <!-- <button
           v-if="metamask_conected"
           class="btn-conection metamask-conection"
           @click="webThreePayment(input_amount)"
         >
           PROCESS PAYMENT
-        </button>
+        </button> -->
 
         <!-- Address conected -->
         <span class="show_metamask_account"></span>
       </div>
       <!-- End Metamask options -->
     </div>
-    <div>
+    <!-- Contract of service -->
+    <!-- <div>
       <div>
         <h1>Contract of service</h1>
       </div>
@@ -107,12 +109,42 @@
       </div>
       <button @click="PayService()">Pay Service</button>
       <button @click="ValidateService()">Validate Service</button>
+    </div> -->
+    <!-- Contract of service -->
+    <!-- Contract of sorteo -->
+    <div>
+      <div>
+        <h1></h1>
+      </div>
+      <div>
+        <h5>Ingrese archivo de participantes para iniciar sorteo</h5>
+        <input type="file" @change="handleFileUpload" />
+        <!-- <button @click="SetLottery()">sortear</button> -->
+        <button @click="getRandom()">Sortear</button>
+        <button @click="getResults()">Ganadores</button>
+        <!-- <h3>resultado</h3> -->
+        <div>
+          <h4>Primer Ganador:</h4>
+          <h4 class="winner1"></h4>
+          <hr />
+          <h4>Segundo Ganador:</h4>
+          <h4 class="winner2"></h4>
+          <hr />
+
+          <h4>Tercer Ganador:</h4>
+          <h4 class="winner3"></h4>
+        </div>
+      </div>
     </div>
+    <!-- Contract of sorteo -->
+
     <!-- End Wallet cards -->
   </div>
 </template>
 <script>
 import { ethers } from "ethers";
+import { csv } from "csvtojson";
+
 export default {
   // This prop is available in case of need send the amount from other component
   props: ["amount_to_pay"],
@@ -145,12 +177,19 @@ export default {
       contract_service_balance: "",
       contract_service_price: "",
       contract_service_symbol: "",
+
+      contract_lottery_address: import.meta.env.VITE_CONTRACT_LOTTERY_ADDRESS,
+      contract_lottery_abi: import.meta.env.VITE_CONTRACT_LOTTERY_ABI,
+
+      winner1: null,
+      winner2: null,
+      winner3: null,
     };
   },
   mounted() {
     // Add text and the symbol of the actual token to the placeholder of input amount
-    document.getElementById("input_amount_id").placeholder =
-      "Add your amount in " + this.token_symbol;
+    // document.getElementById("input_amount_id").placeholder =
+    //   "Add your amount in " + this.token_symbol;
 
     this.bsc_wallet_exist = window.BinanceChain ? true : false;
     this.metamask_exist = window.ethereum ? true : false;
@@ -167,8 +206,36 @@ export default {
     this.bnbAddress();
     this.show_binance_account = document.querySelector(".show_binance_account");
     // this.binance_account = window.BinanceChain.selectedAddress;
+
+    this.winner1 = document.querySelector(".winner1");
+    this.winner2 = document.querySelector(".winner2");
+    this.winner3 = document.querySelector(".winner3");
   },
   methods: {
+    //
+    handleFileUpload(event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        const csvData = reader.result;
+        this.convertCsvToJson(csvData);
+      };
+
+      reader.readAsText(file);
+    },
+
+    async convertCsvToJson(csvData) {
+      // const csv = require("csvtojson");
+      const jsonArray = await csv().fromString(csvData);
+      console.log("objeto csv", jsonArray);
+      const usernames = jsonArray.map((jsonArray) => jsonArray["Username"]);
+      console.log("usernames", usernames);
+      this.SetLottery(usernames);
+
+      // haz lo que necesites con el objeto JSON
+    },
+    //
     // Connect a diferent Wallet to BSC Wallet
     async walletConnect() {
       if (window.ethereum) {
@@ -482,6 +549,129 @@ export default {
           console.error(error);
         });
     },
+    // end service
+
+    // init lottery
+    SetLottery(usernames) {
+      // Crea una instancia del contrato
+      const contractAddress = this.contract_lottery_address;
+      const contractAbi = this.contract_lottery_abi;
+
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+
+      const contract = new ethers.Contract(
+        contractAddress,
+        contractAbi,
+        signer
+      );
+
+      // const lottery_contract_address = new ethers.Contract(contractAddress, contractABI, provider).connect(signer);
+
+      // Define el arreglo de datos tipo string que deseas enviar al contrato
+      // const myArray = ["Leo", "Alfredo", "Elias"];
+      const myArray = usernames;
+
+      // Convierte el arreglo de datos tipo string a formato hexadecimal
+      const myArrayHex = myArray.map((str) =>
+        ethers.utils.formatBytes32String(str)
+      );
+
+      // Llama a la función del contrato que acepta un arreglo de datos tipo string como parámetro
+      contract
+        .setMyArray(myArray)
+        .then((resultado) => {
+          console.log(resultado);
+          // contract
+          //   .getRandomString()
+          //   .then((resultado) => {
+          //     console.log(resultado);
+          //     this.getResults();
+          //   })
+          //   .catch((error) => {
+          //     console.error(error);
+          //   });
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+      // await tx.wait();
+    },
+
+    //
+
+    getRandom() {
+      // Crea una instancia del contrato
+      const contractAddress = this.contract_lottery_address;
+      const contractAbi = this.contract_lottery_abi;
+
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+
+      const contract = new ethers.Contract(
+        contractAddress,
+        contractAbi,
+        signer
+      );
+
+      // Llama a la función del contrato que acepta un arreglo de datos tipo string como parámetro
+      contract
+        .getRandomString()
+        .then((resultado) => {
+          console.log(resultado);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    },
+
+    getResults() {
+      // Crea una instancia del contrato
+      const contractAddress = this.contract_lottery_address;
+      const contractAbi = this.contract_lottery_abi;
+
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+
+      const contract = new ethers.Contract(
+        contractAddress,
+        contractAbi,
+        signer
+      );
+      contract
+        .getWinner1()
+        .then((resultado) => {
+          console.log(resultado);
+          this.winner1.innerHTML = resultado;
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      contract
+        .getWinner2()
+        .then((resultado) => {
+          console.log(resultado);
+          this.winner2.innerHTML = resultado;
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+
+      contract
+        .getWinner3()
+        .then((resultado) => {
+          console.log(resultado);
+          this.winner3.innerHTML = resultado;
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+      // await tx.wait();
+    },
+
+    //
+    // end lottery
   },
   watch: {
     async metamask_account() {
